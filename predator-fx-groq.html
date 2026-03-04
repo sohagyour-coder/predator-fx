@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREDATOR FX — AI সিগনাল</title>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04080f;--bg2:#070f1c;
+  --card:rgba(7,15,28,0.97);
+  --accent:#00d4ff;--accent2:#00ff88;--gold:#ffd426;
+  --buy:#00ff88;--sell:#ff2d55;--purple:#a855f7;--orange:#ff6b35;
+  --text:#c8e6ff;--dim:#2a4a6a;
+  --border:rgba(0,212,255,0.07);--border2:rgba(0,212,255,0.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Tiro Bangla',serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.015) 1px,transparent 1px);background-size:55px 55px;pointer-events:none;z-index:0;}
+.orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:0.1;}
+.orb1{width:600px;height:600px;background:#00d4ff;top:-200px;left:-150px;animation:of 20s ease-in-out infinite;}
+.orb2{width:500px;height:500px;background:#00ff88;bottom:-150px;right:-100px;animation:of 25s ease-in-out infinite reverse;}
+.orb3{width:300px;height:300px;background:#a855f7;top:40%;left:40%;animation:of 18s ease-in-out infinite 3s;}
+@keyframes of{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-15px)}}
+.z{position:relative;z-index:2;}
+.wrap{max-width:900px;margin:0 auto;padding:0 14px;}
+
+/* HEADER */
+header{backdrop-filter:blur(30px);background:rgba(4,8,15,0.93);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:500;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 0;gap:8px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:900;font-size:11px;color:#04080f;box-shadow:0 0 20px rgba(0,212,255,0.4);flex-shrink:0;}
+.brand-text h1{font-family:'Orbitron',monospace;font-size:0.95rem;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand-text p{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--dim);letter-spacing:1px;}
+.hdr-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.live-dot{display:flex;align-items:center;gap:5px;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.18);border-radius:15px;padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--buy);}
+.pulse{width:5px;height:5px;background:var(--buy);border-radius:50%;animation:pl 1.5s ease-in-out infinite;}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* API KEY BUTTON — উপরে সবসময় দেখা যাবে */
+.api-btn{background:linear-gradient(135deg,rgba(255,212,38,0.12),rgba(255,107,53,0.08));border:1px solid rgba(255,212,38,0.3);color:var(--gold);padding:6px 12px;border-radius:15px;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.62rem;transition:all 0.3s;display:flex;align-items:center;gap:5px;letter-spacing:1px;}
+.api-btn:hover{background:linear-gradient(135deg,rgba(255,212,38,0.2),rgba(255,107,53,0.15));box-shadow:0 0 15px rgba(255,212,38,0.2);}
+.api-btn.set{border-color:rgba(0,255,136,0.3);color:var(--buy);background:rgba(0,255,136,0.07);}
+
+.new-btn{background:rgba(0,212,255,0.08);border:1px solid var(--border2);color:var(--accent);padding:6px 12px;border-radius:15px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:0.65rem;transition:all 0.3s;display:flex;align-items:center;gap:4px;}
+.new-btn:hover{background:rgba(0,212,255,0.15);}
+.new-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.spin{display:inline-block;}.spinning{animation:sp 1s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* TICKER */
+.ticker-bar{background:rgba(7,15,28,0.9);border-bottom:1px solid var(--border);padding:6px 0;overflow:hidden;position:relative;}
+.ticker-bar::before,.ticker-bar::after{content:'';position:absolute;top:0;bottom:0;width:60px;z-index:3;}
+.ticker-bar::before{left:0;background:linear-gradient(90deg,var(--bg2),transparent);}
+.ticker-bar::after{right:0;background:linear-gradient(-90deg,var(--bg2),transparent);}
+.ticker-inner{display:flex;gap:0;animation:tick 35s linear infinite;white-space:nowrap;}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:6px;padding:0 16px;border-right:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:0.65rem;}
+.tk-s{color:var(--accent);font-weight:600;}.tk-c.u{color:var(--buy);}.tk-c.d{color:var(--sell);}
+
+/* API KEY MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--bg2);border:1px solid rgba(255,212,38,0.2);border-radius:20px;padding:24px;width:100%;max-width:420px;position:relative;}
+.modal h3{font-family:'Orbitron',monospace;font-size:0.9rem;color:var(--gold);margin-bottom:6px;letter-spacing:1px;}
+.modal p{font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--dim);margin-bottom:16px;line-height:1.6;}
+.modal-inp{width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,212,38,0.15);color:var(--text);padding:11px 14px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;outline:none;margin-bottom:10px;}
+.modal-inp:focus{border-color:var(--gold);}
+.modal-save{width:100%;background:linear-gradient(135deg,rgba(255,212,38,0.12),rgba(255,107,53,0.08));border:1px solid rgba(255,212,38,0.25);color:var(--gold);padding:11px;border-radius:10px;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.72rem;transition:all 0.3s;letter-spacing:1px;margin-bottom:8px;}
+.modal-save:hover{background:rgba(255,212,38,0.2);}
+.modal-close{width:100%;background:transparent;border:1px solid var(--border);color:var(--dim);padding:8px;border-radius:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:0.65rem;}
+.modal-tip{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--dim);margin-top:10px;line-height:1.6;padding:8px;background:rgba(0,0,0,0.2);border-radius:8px;}
+.modal-tip a{color:var(--accent);text-decoration:none;}
+
+/* STATS */
+.stats-row{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;flex:1;min-width:85px;text-align:center;transition:all 0.3s;}
+.stat:hover{border-color:var(--border2);transform:translateY(-2px);}
+.s-val{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;color:var(--accent2);display:block;}
+.s-lbl{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--dim);margin-top:2px;display:block;letter-spacing:1px;text-transform:uppercase;}
+
+/* CHART */
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px;}
+.chart-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.chart-tabs::-webkit-scrollbar{display:none;}
+.ctab{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--dim);padding:10px 13px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;flex-shrink:0;}
+.ctab.on,.ctab:hover{color:var(--accent);border-bottom-color:var(--accent);}
+.chart-frame{height:380px;}
+.chart-frame iframe,.chart-frame>div{width:100%;height:100%;}
+
+/* SIGNAL CONTROLS */
+.sig-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.sec-title{font-family:'Orbitron',monospace;font-size:0.78rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;letter-spacing:1px;}
+.sec-title::before{content:'';width:3px;height:14px;background:linear-gradient(var(--accent),var(--accent2));border-radius:2px;display:block;}
+.filters{display:flex;gap:5px;flex-wrap:wrap;}
+.fb{background:transparent;border:1px solid var(--border);color:var(--dim);padding:4px 10px;border-radius:12px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:0.62rem;transition:all 0.2s;}
+.fb.on,.fb:hover{background:rgba(0,212,255,0.07);border-color:var(--border2);color:var(--accent);}
+
+/* COUNTDOWN */
+.cd-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.cd-bar{flex:1;height:2px;background:rgba(255,255,255,0.04);border-radius:1px;overflow:hidden;}
+.cd-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:1px;transition:width 1s linear;}
+.cd-txt{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--dim);white-space:nowrap;}
+.cd-num{color:var(--accent);font-family:'Orbitron',monospace;font-size:0.7rem;}
+
+/* STATUS BAR */
+.status-bar{background:rgba(0,212,255,0.04);border:1px solid var(--border);border-radius:10px;padding:9px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--dim);}
+.status-bar .sb-ico{font-size:0.9rem;}
+#statusTxt{flex:1;}
+
+/* SIGNAL GRID */
+.sig-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:30px;}
+@media(min-width:640px){.sig-grid{grid-template-columns:1fr 1fr;}}
+
+/* SIGNAL CARD */
+.sig-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform 0.3s,border-color 0.3s;animation:cin 0.4s ease both;position:relative;}
+@keyframes cin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.sig-card:hover{transform:translateY(-3px);}
+.sig-card.buy:hover{border-color:rgba(0,255,136,0.2);}
+.sig-card.sell:hover{border-color:rgba(255,45,85,0.2);}
+.sc-stripe{height:3px;}
+.sig-card.buy .sc-stripe{background:linear-gradient(90deg,transparent,var(--buy) 40%,rgba(0,255,136,0.2) 80%,transparent);}
+.sig-card.sell .sc-stripe{background:linear-gradient(90deg,transparent,var(--sell) 40%,rgba(255,45,85,0.2) 80%,transparent);}
+.sc-body{padding:15px;}
+.sc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.sc-pair{display:flex;align-items:center;gap:8px;}
+.sc-flag{font-size:1.2rem;}
+.sc-pname{font-family:'Orbitron',monospace;font-size:0.88rem;font-weight:700;color:#fff;}
+.sc-sub{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--accent);margin-top:1px;}
+.dir-pill{padding:4px 11px;border-radius:15px;font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;display:flex;align-items:center;gap:3px;letter-spacing:1px;}
+.dir-pill.buy{background:rgba(0,255,136,0.09);color:var(--buy);border:1px solid rgba(0,255,136,0.22);}
+.dir-pill.sell{background:rgba(255,45,85,0.09);color:var(--sell);border:1px solid rgba(255,45,85,0.22);}
+.sc-levels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:11px;}
+.lbox{background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:8px;text-align:center;position:relative;overflow:hidden;}
+.lbox::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;}
+.lbox.e::after{background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.lbox.s::after{background:linear-gradient(90deg,transparent,var(--sell),transparent);}
+.lbox.t::after{background:linear-gradient(90deg,transparent,var(--buy),transparent);}
+.lb-lbl{font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--dim);display:block;margin-bottom:3px;letter-spacing:1px;text-transform:uppercase;}
+.lb-val{font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:600;}
+.lbox.e .lb-val{color:var(--gold);}.lbox.s .lb-val{color:var(--sell);}.lbox.t .lb-val{color:var(--buy);}
+.sc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:0.57rem;padding:2px 8px;border-radius:4px;letter-spacing:1px;}
+.t-rr{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.15);color:var(--accent);}
+.t-tf{background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.13);color:var(--purple);}
+.t-st{background:rgba(255,107,53,0.06);border:1px solid rgba(255,107,53,0.13);color:var(--orange);}
+.t-ss{background:rgba(255,212,38,0.05);border:1px solid rgba(255,212,38,0.12);color:var(--gold);}
+
+/* Logic */
+.logic{background:rgba(0,0,0,0.2);border:1px solid rgba(0,212,255,0.05);border-radius:10px;padding:11px;margin-bottom:10px;}
+.logic-hdr{font-family:'Orbitron',monospace;font-size:0.58rem;color:var(--accent);letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.logic-hdr::before{content:'▶';font-size:0.42rem;}
+.steps{display:flex;flex-direction:column;gap:5px;}
+.step{display:flex;align-items:flex-start;gap:6px;font-size:0.7rem;color:var(--dim);line-height:1.5;}
+.step-n{font-family:'Orbitron',monospace;font-size:0.52rem;color:var(--accent);background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.13);border-radius:3px;padding:1px 4px;flex-shrink:0;margin-top:2px;}
+
+/* Progress */
+.sc-prog{margin-bottom:10px;}
+.prog-row{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--dim);margin-bottom:3px;}
+.prog-bg{height:3px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;}
+.prog-fg{height:100%;border-radius:2px;}
+.prog-fg.buy{background:linear-gradient(90deg,rgba(0,255,136,0.4),var(--buy));}
+.prog-fg.sell{background:linear-gradient(90deg,rgba(255,45,85,0.4),var(--sell));}
+.sc-foot{display:flex;justify-content:space-between;align-items:center;padding-top:9px;border-top:1px solid var(--border);}
+.sc-time{font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--dim);}
+.sc-status{font-family:'JetBrains Mono',monospace;font-size:0.58rem;padding:2px 8px;border-radius:7px;}
+.sc-status.active{background:rgba(0,255,136,0.06);color:var(--buy);border:1px solid rgba(0,255,136,0.14);}
+.sc-status.pending{background:rgba(255,212,38,0.06);color:var(--gold);border:1px solid rgba(255,212,38,0.14);}
+.ai-mark{position:absolute;top:10px;right:10px;font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--purple);background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.13);border-radius:4px;padding:1px 5px;}
+
+/* LOADING */
+.load-box{display:flex;flex-direction:column;align-items:center;padding:50px 20px;gap:12px;grid-column:1/-1;}
+.load-ring{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;}
+.load-lbl{font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--dim);letter-spacing:1px;}
+
+/* SESSION */
+.session-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;}
+.session-title{font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--dim);letter-spacing:2px;margin-bottom:10px;}
+.session-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;}
+.sess-item{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:7px;background:rgba(0,0,0,0.15);border:1px solid var(--border);}
+.sess-item.on{background:rgba(0,212,255,0.05);border-color:rgba(0,212,255,0.15);}
+.sess-dot{width:5px;height:5px;border-radius:50%;background:var(--dim);flex-shrink:0;}
+.sess-item.on .sess-dot{background:var(--buy);box-shadow:0 0 5px var(--buy);animation:pl 1.5s ease-in-out infinite;}
+.sess-name{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--dim);}
+.sess-item.on .sess-name{color:var(--text);}
+.sess-time{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--dim);margin-left:auto;}
+
+.disc{background:rgba(255,212,38,0.02);border:1px solid rgba(255,212,38,0.07);border-radius:10px;padding:10px 14px;margin-bottom:30px;font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:rgba(255,212,38,0.35);line-height:1.6;text-align:center;}
+footer{border-top:1px solid var(--border);padding:20px 0;text-align:center;}
+.ft-brand{font-family:'Orbitron',monospace;font-size:0.78rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.ft-sub{font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--dim);letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="orbs"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>🔑 GROQ API KEY</h3>
+    <p>Groq API Key বসাও। console.groq.com থেকে ফ্রিতে পাবে।</p>
+    <input class="modal-inp" id="keyInp" type="password" placeholder="AIza..."/>
+    <button class="modal-save" onclick="saveKey()">✓ SAVE & START →</button>
+    <button class="modal-close" onclick="closeModal()">পরে করবো (Demo দেখাবে)</button>
+    <div class="modal-tip">
+      🔗 Key পেতে: <a href="https://console.groq.com" target="_blank">console.groq.com</a><br>
+      → Google/GitHub দিয়ে Login করো<br>
+      → "API Keys" → "Create API Key" ক্লিক করো<br>
+      → Key কপি করে এখানে বসাও ✅
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="z">
+<div class="wrap">
+  <div class="hdr">
+    <div class="brand">
+      <div class="brand-logo">PFX</div>
+      <div class="brand-text">
+        <h1>PREDATOR FX</h1>
+        <p>GROQ AI · ICT · SMC · LIVE</p>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="live-dot"><div class="pulse"></div>LIVE</div>
+      <button class="api-btn" id="apiBtnHdr" onclick="openModal()">🔑 API KEY</button>
+      <button class="new-btn" id="newBtn" onclick="fetchSignals()">
+        <span class="spin" id="spinEl">⟳</span> নতুন
+      </button>
+    </div>
+  </div>
+</div>
+<div class="ticker-bar"><div class="ticker-inner" id="tkInner"></div></div>
+</header>
+
+<main class="z">
+<div class="wrap">
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat"><span class="s-val" id="sTot">0</span><span class="s-lbl">সিগনাল</span></div>
+  <div class="stat"><span class="s-val" id="sWin">68%</span><span class="s-lbl">উইন রেট</span></div>
+  <div class="stat"><span class="s-val" id="sRR">1:3.4</span><span class="s-lbl">গড় RR</span></div>
+  <div class="stat"><span class="s-val" id="sAct">0</span><span class="s-lbl">অ্যাক্টিভ</span></div>
+  <div class="stat"><span class="s-val" id="sSess">—</span><span class="s-lbl">সেশন</span></div>
+</div>
+
+<!-- STATUS -->
+<div class="status-bar">
+  <span class="sb-ico">🤖</span>
+  <span id="statusTxt">API Key বসাও — AI সিগনাল শুরু হবে</span>
+</div>
+
+<!-- CHART -->
+<div class="chart-box">
+  <div class="chart-tabs">
+    <div class="ctab on" onclick="switchChart('FOREXCOM:XAUUSD',this)">XAU/USD</div>
+    <div class="ctab" onclick="switchChart('FX:EURUSD',this)">EUR/USD</div>
+    <div class="ctab" onclick="switchChart('FX:GBPUSD',this)">GBP/USD</div>
+    <div class="ctab" onclick="switchChart('FX:USDJPY',this)">USD/JPY</div>
+    <div class="ctab" onclick="switchChart('FOREXCOM:XAGUSD',this)">XAG/USD</div>
+    <div class="ctab" onclick="switchChart('NASDAQ:NDX',this)">NAS100</div>
+  </div>
+  <div class="chart-frame" id="chartFrame">
+    <div id="tv_main"></div>
+  </div>
+</div>
+
+<!-- SESSIONS -->
+<div class="session-box">
+  <div class="session-title">TRADING SESSIONS — BD TIME</div>
+  <div class="session-grid" id="sessGrid"></div>
+</div>
+
+<!-- SIGNALS -->
+<div class="sig-top">
+  <div class="sec-title">AI সিগনাল + এন্ট্রি লজিক</div>
+  <div class="filters">
+    <button class="fb on" onclick="doFilter('all',this)">ALL</button>
+    <button class="fb" onclick="doFilter('buy',this)">BUY</button>
+    <button class="fb" onclick="doFilter('sell',this)">SELL</button>
+    <button class="fb" onclick="doFilter('gold',this)">GOLD</button>
+    <button class="fb" onclick="doFilter('forex',this)">FOREX</button>
+  </div>
+</div>
+<div class="cd-row">
+  <div class="cd-bar"><div class="cd-fill" id="cdFill" style="width:100%"></div></div>
+  <div class="cd-txt">NEXT: <span class="cd-num" id="cdNum">--:--</span></div>
+</div>
+
+<div class="sig-grid" id="sigGrid">
+  <div class="load-box">
+    <div class="load-ring"></div>
+    <div class="load-lbl" id="loadLbl">API KEY বসাও ⬆️</div>
+  </div>
+</div>
+
+<div class="disc">⚠️ এই সিগনাল AI-জেনারেটেড ও শুধুমাত্র শিক্ষামূলক। ফরেক্স ট্রেডিং ঝুঁকিপূর্ণ।</div>
+</div>
+</main>
+
+<footer class="z">
+  <div class="wrap">
+    <div class="ft-brand">PREDATOR FX AI</div>
+    <div class="ft-sub">© 2026 · GROQ AI · ICT · SMC · TRADINGVIEW LIVE</div>
+  </div>
+</footer>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
+<script>
+// ═══════════════════════════
+// API KEY
+// ═══════════════════════════
+let API_KEY = localStorage.getItem('pfx_groq') || '';
+
+function openModal(){ document.getElementById('modalOverlay').classList.add('show'); }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+
+function saveKey(){
+  const v = document.getElementById('keyInp').value.trim();
+  if(!v || !v.startsWith('gsk_')){ alert('সঠিক Groq API Key দাও! (gsk_ দিয়ে শুরু হবে)'); return; }
+  API_KEY = v;
+  localStorage.setItem('pfx_groq', v);
+  closeModal();
+  updateApiBtn();
+  fetchSignals();
+}
+
+function updateApiBtn(){
+  const btn = document.getElementById('apiBtnHdr');
+  if(API_KEY){ btn.textContent = '✅ API SET'; btn.classList.add('set'); }
+  else{ btn.textContent = '🔑 API KEY'; btn.classList.remove('set'); }
+}
+
+// ═══════════════════════════
+// CLOCK & SESSION
+// ═══════════════════════════
+const SESSIONS = [
+  {name:'Asia',bd:'৬AM–২PM',h:[6,14]},
+  {name:'CBDR',bd:'১২AM–৬AM',h:[0,6]},
+  {name:'London KZ',bd:'২PM–৪PM',h:[14,16]},
+  {name:'Silver Bullet',bd:'৭PM–৯PM',h:[19,21]},
+  {name:'NY Session',bd:'৭PM–১১PM',h:[19,23]},
+  {name:'Overlap',bd:'২PM–৬PM',h:[14,18]},
+];
+
+function updateClock(){
+  const now = new Date(), h = now.getHours();
+  let sess = 'OFF HOURS';
+  if(h>=14&&h<16) sess='LONDON';
+  else if(h>=19&&h<21) sess='SILVER BULLET';
+  else if(h>=19&&h<23) sess='NEW YORK';
+  else if(h>=0&&h<6) sess='CBDR';
+  else if(h>=6&&h<14) sess='ASIA';
+  document.getElementById('sSess').textContent = sess;
+
+  document.getElementById('sessGrid').innerHTML = SESSIONS.map(s=>{
+    const on = h>=s.h[0] && h<s.h[1];
+    return `<div class="sess-item ${on?'on':''}">
+      <div class="sess-dot"></div>
+      <div class="sess-name">${s.name}</div>
+      <div class="sess-time">${s.bd}</div>
+    </div>`;
+  }).join('');
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ═══════════════════════════
+// TICKER
+// ═══════════════════════════
+const TKS = ['XAUUSD','EURUSD','GBPUSD','USDJPY','XAGUSD','AUDUSD','USDCAD','NAS100'];
+function buildTicker(){
+  const all = [...TKS,...TKS,...TKS];
+  document.getElementById('tkInner').innerHTML = all.map(s=>
+    `<div class="tk"><span class="tk-s">${s}</span><span class="tk-c u">TV LIVE ↗</span></div>`
+  ).join('');
+}
+buildTicker();
+
+// ═══════════════════════════
+// CHART
+// ═══════════════════════════
+let tvWidget = null;
+function loadChart(sym){
+  document.getElementById('tv_main').innerHTML = '';
+  document.getElementById('tv_main').id = 'tv_main';
+  if(tvWidget){ try{ tvWidget.remove(); }catch(e){} }
+  tvWidget = new TradingView.widget({
+    autosize: true, symbol: sym, interval: "15",
+    timezone: "Asia/Dhaka", theme: "dark", style: "1", locale: "en",
+    toolbar_bg: "#07101e", enable_publishing: false,
+    hide_top_toolbar: false, save_image: false,
+    container_id: "tv_main", backgroundColor: "#04080f",
+    studies: ["RSI@tv-basicstudies","MACD@tv-basicstudies"],
+    overrides:{
+      "paneProperties.background":"#04080f",
+      "paneProperties.backgroundType":"solid",
+      "scalesProperties.textColor":"#4a6a88",
+      "mainSeriesProperties.candleStyle.upColor":"#00ff88",
+      "mainSeriesProperties.candleStyle.downColor":"#ff2d55",
+      "mainSeriesProperties.candleStyle.wickUpColor":"#00ff88",
+      "mainSeriesProperties.candleStyle.wickDownColor":"#ff2d55",
+      "mainSeriesProperties.candleStyle.borderUpColor":"#00ff88",
+      "mainSeriesProperties.candleStyle.borderDownColor":"#ff2d55",
+    }
+  });
+}
+function switchChart(sym, tab){
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('on'));
+  tab.classList.add('on');
+  loadChart(sym);
+}
+loadChart('FOREXCOM:XAUUSD');
+
+// ═══════════════════════════
+// SIGNALS
+// ═══════════════════════════
+let allSigs=[], curFilter='all', cdVal=0, cdTimer=null, totGen=0;
+const FLAGS={XAUUSD:'🥇',XAGUSD:'🥈',EURUSD:'🇪🇺',GBPUSD:'🇬🇧',USDJPY:'🇯🇵',AUDUSD:'🇦🇺',USDCAD:'🇨🇦',NZDUSD:'🇳🇿',NAS100:'📈',US30:'📊'};
+
+const FALLBACK=[
+  {pair:"XAUUSD",direction:"buy",entry:"5,155.00",sl:"5,125.00",tp:"5,270.00",rr:"1:3.8",timeframe:"1H + 15M",setup:"The Predator",session:"London KZ",steps:["1H Bullish Bias — Weekly BSL DOL উপরে","SSL ~$5,125 Grab হয়েছে (The Trap ✅)","15M Bullish CHoCH হয়েছে (The Flip ✅)","5M FVG ~$5,145 তৈরি (The Magnet ✅)","Kill Zone-এ Entry — সব Condition পূরণ ✅"],progress:65,status:"active",pips:115},
+  {pair:"EURUSD",direction:"sell",entry:"1.08420",sl:"1.08690",tp:"1.07830",rr:"1:2.2",timeframe:"4H + 1H",setup:"Liquidity Grab",session:"NY Session",steps:["4H Bearish Bias — Daily SSL নিচে DOL","BSL ~1.0869 Sweep হয়েছে (Trap ✅)","4H Bearish OB Zone-এ Reaction দেখা গেছে","1H Bearish CHoCH Confirmed ✅","FVG Fill এলাকায় — SELL Entry নাও"],progress:42,status:"active",pips:59},
+  {pair:"GBPUSD",direction:"buy",entry:"1.26850",sl:"1.26520",tp:"1.27650",rr:"1:2.4",timeframe:"1H + 5M",setup:"Silver Bullet",session:"Silver Bullet",steps:["1H Bullish Structure Intact আছে","SSL Grab হয়েছে NY Open-এ","5M Bullish FVG তৈরি হয়েছে ✅","Silver Bullet Window Active ✅","TP1-এ Partial Close, SL Trail করো"],progress:80,status:"active",pips:80},
+  {pair:"XAUUSD",direction:"buy",entry:"5,095.00",sl:"5,062.00",tp:"5,218.00",rr:"1:3.7",timeframe:"4H + 1H",setup:"OB + FVG",session:"CBDR",steps:["Weekly Bullish Bias Confirmed ✅","Daily FVG ~$5,000-5,100 এরিয়া","4H Fresh Bullish OB Untouched আছে","CBDR Low Break Fake ছিল","Confluence Zone — High RR Setup ✅"],progress:25,status:"pending",pips:123},
+  {pair:"USDJPY",direction:"sell",entry:"149.850",sl:"150.350",tp:"148.600",rr:"1:2.5",timeframe:"1H + 15M",setup:"Mitigation Block",session:"London",steps:["Daily Bearish Bias মিলছে","Premium Zone-এ Price এসেছে","Bearish Mitigation Block মিটিগেশন","15M Bearish CHoCH Confirmed ✅","SL উপরে — TP নিচে SSL-এ"],progress:32,status:"active",pips:125},
+];
+
+function getNow(){
+  const d=new Date(),h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');
+  return `${h%12||12}:${m} ${h>=12?'PM':'AM'}`;
+}
+
+function renderSigs(){
+  const f = curFilter;
+  const list = f==='all'?allSigs
+    :f==='buy'?allSigs.filter(s=>s.direction==='buy')
+    :f==='sell'?allSigs.filter(s=>s.direction==='sell')
+    :f==='gold'?allSigs.filter(s=>s.pair&&(s.pair.includes('XAU')||s.pair.includes('XAG')))
+    :allSigs.filter(s=>s.pair&&!s.pair.includes('XAU')&&!s.pair.includes('XAG'));
+
+  if(!list.length){
+    document.getElementById('sigGrid').innerHTML=`<div class="load-box"><div class="load-lbl">এই ফিল্টারে সিগনাল নেই</div></div>`;
+    return;
+  }
+  document.getElementById('sigGrid').innerHTML = list.map((s,i)=>`
+    <div class="sig-card ${s.direction}" style="animation-delay:${i*0.07}s">
+      <div class="sc-stripe"></div>
+      <div class="ai-mark">🤖 AI</div>
+      <div class="sc-body">
+        <div class="sc-head">
+          <div class="sc-pair">
+            <div class="sc-flag">${FLAGS[s.pair]||'💹'}</div>
+            <div>
+              <div class="sc-pname">${s.pair}</div>
+              <div class="sc-sub">TradingView → Real Price</div>
+            </div>
+          </div>
+          <div class="dir-pill ${s.direction}">${s.direction==='buy'?'▲ BUY':'▼ SELL'}</div>
+        </div>
+        <div class="sc-levels">
+          <div class="lbox e"><span class="lb-lbl">ENTRY</span><span class="lb-val">${s.entry}</span></div>
+          <div class="lbox s"><span class="lb-lbl">STOP</span><span class="lb-val">${s.sl}</span></div>
+          <div class="lbox t"><span class="lb-lbl">TARGET</span><span class="lb-val">${s.tp}</span></div>
+        </div>
+        <div class="sc-tags">
+          <div class="tag t-rr">RR ${s.rr}</div>
+          <div class="tag t-tf">${s.timeframe}</div>
+          <div class="tag t-st">${s.setup}</div>
+          <div class="tag t-ss">⏰ ${s.session||'—'}</div>
+        </div>
+        <div class="logic">
+          <div class="logic-hdr">এন্ট্রি লজিক — ICT/SMC</div>
+          <div class="steps">
+            ${(s.steps||[]).map((st,si)=>`
+              <div class="step">
+                <span class="step-n">${si+1}</span>
+                <span>${st}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="sc-prog">
+          <div class="prog-row"><span>প্রগ্রেস</span><span>${s.progress||0}%</span></div>
+          <div class="prog-bg"><div class="prog-fg ${s.direction}" style="width:${s.progress||0}%"></div></div>
+        </div>
+        <div class="sc-foot">
+          <div class="sc-time">🕐 ${s.time||getNow()}</div>
+          <div class="sc-status ${s.status||'active'}">${s.status==='active'?'● ACTIVE':'◌ PENDING'}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function updateStats(){
+  const act = allSigs.filter(s=>s.status==='active').length;
+  document.getElementById('sTot').textContent = totGen;
+  document.getElementById('sAct').textContent = act;
+}
+
+function startCD(sec){
+  if(cdTimer) clearInterval(cdTimer);
+  cdVal = sec;
+  const el = document.getElementById('cdNum');
+  const fill = document.getElementById('cdFill');
+  cdTimer = setInterval(()=>{
+    cdVal--;
+    const m=Math.floor(cdVal/60), s=cdVal%60;
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    fill.style.width = ((cdVal/sec)*100)+'%';
+    if(cdVal<=0){ clearInterval(cdTimer); fetchSignals(); }
+  },1000);
+}
+
+// ═══════════════════════════
+// GEMINI API
+// ═══════════════════════════
+async function fetchSignals(){
+  if(!API_KEY){
+    openModal();
+    return;
+  }
+
+  document.getElementById('sigGrid').innerHTML=`<div class="load-box"><div class="load-ring"></div><div class="load-lbl">GEMINI AI বিশ্লেষণ করছে...</div></div>`;
+  document.getElementById('newBtn').disabled = true;
+  document.getElementById('spinEl').classList.add('spinning');
+  document.getElementById('statusTxt').textContent = 'Groq AI ICT ও SMC বিশ্লেষণ করছে...';
+
+  const now = new Date(), h = now.getHours();
+  const sess = h>=14&&h<16?'London Kill Zone':h>=19&&h<21?'NY Silver Bullet':h>=0&&h<6?'CBDR':h>=6&&h<14?'Asia Session':'Overlap';
+
+  const prompt = `You are an expert ICT and SMC forex analyst. Generate exactly 5 realistic trading signals with detailed Bengali entry logic.
+Current session: ${sess}
+
+Return ONLY a valid JSON array, no markdown:
+[{
+  "pair":"XAUUSD",
+  "direction":"buy",
+  "entry":"5155.00",
+  "sl":"5125.00",
+  "tp":"5265.00",
+  "rr":"1:3.7",
+  "timeframe":"1H + 15M",
+  "setup":"The Predator",
+  "session":"London KZ",
+  "steps":["১H Bullish Bias নিশ্চিত — Weekly DOL উপরে","SSL Grab হয়েছে (The Trap ✅)","15M Bullish CHoCH (The Flip ✅)","5M FVG তৈরি (The Magnet ✅)","Kill Zone-এ Entry ✅"],
+  "progress":45,
+  "status":"active",
+  "pips":110
+}]
+
+Rules:
+- 5 signals, mix buy/sell, XAUUSD at least twice
+- steps: exactly 5 Bengali sentences with ICT terms
+- setup: The Predator/Silver Bullet/Liquidity Grab/OB+FVG/CBDR Breakout/CRT Setup/Mitigation Block
+- Realistic current price levels`;
+
+  try{
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {role: "system", content: "You are an expert ICT and SMC forex analyst. Always respond with valid JSON array only, no markdown."},
+          {role: "user", content: prompt}
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
+
+    if(res.status===401||res.status===403||res.status===400){
+      localStorage.removeItem('pfx_groq');
+      API_KEY='';
+      updateApiBtn();
+      alert('API Key ভুল! নতুন Key দাও।');
+      openModal();
+      document.getElementById('newBtn').disabled=false;
+      document.getElementById('spinEl').classList.remove('spinning');
+      return;
+    }
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+    const match = raw.match(/\[[\s\S]*\]/);
+    if(!match) throw new Error('no json');
+
+    let sigs = JSON.parse(match[0]);
+    sigs = sigs.map(s=>({...s, time:getNow()}));
+    allSigs = sigs;
+    totGen += sigs.length;
+    renderSigs();
+    updateStats();
+    document.getElementById('statusTxt').textContent = `✅ ${sigs.length}টি নতুন Groq AI সিগনাল তৈরি! পরবর্তী আপডেট ৫ মিনিটে।`;
+    startCD(300);
+
+  }catch(e){
+    console.error(e);
+    allSigs = FALLBACK.map(s=>({...s,time:getNow()}));
+    totGen += allSigs.length;
+    renderSigs();
+    updateStats();
+    document.getElementById('statusTxt').textContent = '⚠️ Demo সিগনাল দেখাচ্ছে। API Key চেক করো।';
+    startCD(180);
+  }
+
+  document.getElementById('newBtn').disabled = false;
+  document.getElementById('spinEl').classList.remove('spinning');
+}
+
+function doFilter(f,btn){
+  curFilter = f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderSigs();
+}
+
+// INIT
+updateApiBtn();
+if(API_KEY){
+  fetchSignals();
+} else {
+  allSigs = FALLBACK.map(s=>({...s,time:getNow()}));
+  totGen = FALLBACK.length;
+  setTimeout(()=>{ renderSigs(); updateStats(); }, 400);
+  setTimeout(()=> openModal(), 1000);
+}
+</script>
+</body>
+</html>
